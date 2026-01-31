@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { WatcherDashboardComponent } from './watcher-dashboard.component';
+import { provideHttpClient } from '@angular/common/http';
 
 describe('WatcherDashboardComponent', () => {
   let component: WatcherDashboardComponent;
@@ -8,7 +9,8 @@ describe('WatcherDashboardComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [WatcherDashboardComponent]
+      imports: [WatcherDashboardComponent],
+      providers: [provideHttpClient()]
     })
     .compileComponents();
 
