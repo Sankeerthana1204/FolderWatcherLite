@@ -3,6 +3,7 @@ import { of } from 'rxjs';
 import { WatcherService } from '../core/services/watcher.service';
 
 import { WatcherDashboardComponent } from './watcher-dashboard.component';
+import { provideHttpClient } from '@angular/common/http';
 
 describe('WatcherDashboardComponent', () => {
   let component: WatcherDashboardComponent;
@@ -17,7 +18,7 @@ describe('WatcherDashboardComponent', () => {
 
     await TestBed.configureTestingModule({
       imports: [WatcherDashboardComponent],
-      providers: [{ provide: WatcherService, useValue: watcherServiceSpy }]
+      providers: [provideHttpClient()]
     })
     .compileComponents();
 
