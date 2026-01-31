@@ -3,6 +3,8 @@ name: CI
 on:
   push:
     branches: [ main ]
+    tags:
+      - 'v*'
   pull_request:
     branches: [ main ]
 
@@ -32,6 +34,7 @@ jobs:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
           cache-dependency-path: folder-watcher-backend/package-lock.json
+          registry-url: 'https://registry.npmjs.org'
 
       - name: Install dependencies
         working-directory: folder-watcher-backend
@@ -40,6 +43,30 @@ jobs:
       - name: Build backend
         working-directory: folder-watcher-backend
         run: npm run build
+
+      - name: Determine publish eligibility (backend)
+        id: pkg_backend
+        working-directory: folder-watcher-backend
+        run: |
+          echo "name=$(jq -r '.name // empty' package.json)" >> $GITHUB_OUTPUT
+          echo "version=$(jq -r '.version // empty' package.json)" >> $GITHUB_OUTPUT
+          echo "private=$(jq -r '.private // false' package.json)" >> $GITHUB_OUTPUT
+
+      - name: Set version from tag (backend)
+        if: startsWith(github.ref, 'refs/tags/') && steps.pkg_backend.outputs.private != 'true' && steps.pkg_backend.outputs.name != ''
+        id: setver_backend
+        working-directory: folder-watcher-backend
+        run: |
+          TAG_REF="${GITHUB_REF#refs/tags/}"
+          echo "tag=$TAG_REF" >> $GITHUB_OUTPUT
+          npm version "$TAG_REF" --no-git-tag-version
+
+      - name: Publish backend to npm
+        if: startsWith(github.ref, 'refs/tags/') && steps.pkg_backend.outputs.private != 'true' && steps.pkg_backend.outputs.name != ''
+        working-directory: folder-watcher-backend
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --access public
 
   ui:
     name: UI (Node ${{ matrix.node-version }})
@@ -59,6 +86,7 @@ jobs:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
           cache-dependency-path: folder-watcher-ui/package-lock.json
+          registry-url: 'https://registry.npmjs.org'
 
       - name: Install dependencies
         working-directory: folder-watcher-ui
@@ -71,3 +99,27 @@ jobs:
       - name: Test UI (headless Chrome)
         working-directory: folder-watcher-ui
         run: npm run test -- --watch=false --browsers=ChromeHeadless
+
+      - name: Determine publish eligibility (ui)
+        id: pkg_ui
+        working-directory: folder-watcher-ui
+        run: |
+          echo "name=$(jq -r '.name // empty' package.json)" >> $GITHUB_OUTPUT
+          echo "version=$(jq -r '.version // empty' package.json)" >> $GITHUB_OUTPUT
+          echo "private=$(jq -r '.private // false' package.json)" >> $GITHUB_OUTPUT
+
+      - name: Set version from tag (ui)
+        if: startsWith(github.ref, 'refs/tags/') && steps.pkg_ui.outputs.private != 'true' && steps.pkg_ui.outputs.name != ''
+        id: setver_ui
+        working-directory: folder-watcher-ui
+        run: |
+          TAG_REF="${GITHUB_REF#refs/tags/}"
+          echo "tag=$TAG_REF" >> $GITHUB_OUTPUT
+          npm version "$TAG_REF" --no-git-tag-version
+
+      - name: Publish ui to npm
+        if: startsWith(github.ref, 'refs/tags/') && steps.pkg_ui.outputs.private != 'true' && steps.pkg_ui.outputs.name != ''
+        working-directory: folder-watcher-ui
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --access public
