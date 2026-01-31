@@ -1,9 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
-import { WatcherService } from '../core/services/watcher.service';
-
 import { WatcherDashboardComponent } from './watcher-dashboard.component';
-import { provideHttpClient } from '@angular/common/http';
+import { WatcherService } from '../core/services/watcher.service';
 
 describe('WatcherDashboardComponent', () => {
   let component: WatcherDashboardComponent;
@@ -11,14 +9,18 @@ describe('WatcherDashboardComponent', () => {
   let watcherServiceSpy: jasmine.SpyObj<WatcherService>;
 
   beforeEach(async () => {
-    watcherServiceSpy = jasmine.createSpyObj('WatcherService', ['startWatching', 'stopWatching', 'getEvents']);
-    watcherServiceSpy.startWatching.and.returnValue(of(void 0));
-    watcherServiceSpy.stopWatching.and.returnValue(of(void 0));
-    watcherServiceSpy.getEvents.and.returnValue(of([]));
+    const mockService = jasmine.createSpyObj<WatcherService>('WatcherService', [
+      'startWatching',
+      'stopWatching',
+      'getEvents',
+    ]);
+    mockService.startWatching.and.returnValue(of(void 0));
+    mockService.stopWatching.and.returnValue(of(void 0));
+    mockService.getEvents.and.returnValue(of([]));
 
     await TestBed.configureTestingModule({
       imports: [WatcherDashboardComponent],
-      providers: [provideHttpClient()]
+      providers: [{ provide: WatcherService, useValue: mockService }],
     })
     .compileComponents();
 
@@ -32,21 +34,21 @@ describe('WatcherDashboardComponent', () => {
   });
 
   it('should call startWatching with folderPath when Start Watching is clicked', () => {
-    component.folderPath = 'C:\\Test\\Folder';
+    const service = TestBed.inject(WatcherService);
+    component.folderPath = 'C\\Test\\Folder';
     fixture.detectChanges();
 
     const buttons = fixture.nativeElement.querySelectorAll('button') as NodeListOf<HTMLButtonElement>;
-    const startBtn = buttons[0];
-    startBtn.click();
-
-    expect(watcherServiceSpy.startWatching).toHaveBeenCalledWith('C:\\Test\\Folder');
+    (buttons[0] as HTMLButtonElement).click();
+    expect(service.startWatching).toHaveBeenCalledWith('C\\Test\\Folder');
   });
 
   it('should call stopWatching when Stop is clicked', () => {
-    const buttons = fixture.nativeElement.querySelectorAll('button') as NodeListOf<HTMLButtonElement>;
-    const stopBtn = buttons[1];
-    stopBtn.click();
+    const service = TestBed.inject(WatcherService);
+    fixture.detectChanges();
 
-    expect(watcherServiceSpy.stopWatching).toHaveBeenCalled();
+    const buttons = fixture.nativeElement.querySelectorAll('button') as NodeListOf<HTMLButtonElement>;
+    (buttons[1] as HTMLButtonElement).click();
+    expect(service.stopWatching).toHaveBeenCalled();
   });
 });
